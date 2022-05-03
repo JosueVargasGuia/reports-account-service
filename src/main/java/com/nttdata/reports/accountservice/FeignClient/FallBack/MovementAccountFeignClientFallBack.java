@@ -14,7 +14,6 @@ import lombok.extern.log4j.Log4j2;
 public class MovementAccountFeignClientFallBack implements MovementAccountFeignClient {
 	 
 	public List<MovementAccount> findAll() {
-		//MovementAccount movementAccount = new Movem entAccount();
 		log.info("MovementAccountFeignClientFallBack: empty"   );
 		return new ArrayList<MovementAccount>();
 	}

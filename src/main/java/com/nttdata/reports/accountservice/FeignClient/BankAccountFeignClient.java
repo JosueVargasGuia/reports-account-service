@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import com.nttdata.reports.accountservice.FeignClient.FallBack.BankAccountFeignClientFallBack;
 import com.nttdata.reports.accountservice.model.BankAccounts;
+import com.nttdata.reports.accountservice.model.ConsolidatedCustomerProducts;
 import com.nttdata.reports.accountservice.model.MovementAccount;
 
 
@@ -21,6 +22,9 @@ public interface BankAccountFeignClient {
 	
 	@GetMapping
 	List<BankAccounts> findAllBankAccounts();
+	
+	@GetMapping("/findProductByIdCustomer/{idCustomer}")
+	List<ConsolidatedCustomerProducts> findProductByIdCustomer(@PathVariable("idCustomer") Long idCustomer);
 
 
 	

@@ -1,11 +1,13 @@
 package com.nttdata.reports.accountservice.FeignClient.FallBack;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import com.nttdata.reports.accountservice.FeignClient.BankAccountFeignClient;
 import com.nttdata.reports.accountservice.model.BankAccounts;
+import com.nttdata.reports.accountservice.model.ConsolidatedCustomerProducts;
 import com.nttdata.reports.accountservice.model.MovementAccount;
 
 import lombok.extern.log4j.Log4j2;
@@ -36,5 +38,11 @@ public class BankAccountFeignClientFallBack implements BankAccountFeignClient{
 	public List<BankAccounts> findAllBankAccounts() {
 		log.info("List of bank accounts not found! ");
 		return null;
+	}
+	
+	public List<ConsolidatedCustomerProducts> findProductByIdCustomer(Long idCustomer) {
+		// TODO Auto-generated method stub
+		log.info(accountService + "/findProductByIdCustomer/" + idCustomer);
+		return new ArrayList<>();
 	}
 }
