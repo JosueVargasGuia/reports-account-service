@@ -11,11 +11,12 @@ import lombok.ToString;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ReportBankAccount {
+public class ReporteSaldoPromedio {
 	
-	private MovementAccount movementAccount;
-	private BankAccounts bankAccounts;
+	private Long idBankAccount;
+	private Long idCreditAccount;
+	private Double amount;
+	private TypeAccount typeAccount;
 	private Product product;
-	private CreditAccount creditAccount;
 
 }

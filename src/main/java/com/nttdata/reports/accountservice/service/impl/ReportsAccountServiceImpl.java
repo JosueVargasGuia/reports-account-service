@@ -1,25 +1,27 @@
 package com.nttdata.reports.accountservice.service.impl;
 
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.nttdata.reports.accountservice.FeignClient.BankAccountFeignClient;
 import com.nttdata.reports.accountservice.FeignClient.CreditFeignClient;
+import com.nttdata.reports.accountservice.FeignClient.CustomerFeignClient;
 import com.nttdata.reports.accountservice.FeignClient.MovementAccountFeignClient;
+import com.nttdata.reports.accountservice.FeignClient.MovementCreditFeignClient;
 import com.nttdata.reports.accountservice.FeignClient.ProductFeignClient;
 import com.nttdata.reports.accountservice.FeignClient.TableIdFeignClient;
 import com.nttdata.reports.accountservice.model.BankAccounts;
-import com.nttdata.reports.accountservice.model.CreditAccount;
+import com.nttdata.reports.accountservice.model.ConsolidatedCustomerProducts;
 import com.nttdata.reports.accountservice.model.ReportBankAccount;
+import com.nttdata.reports.accountservice.model.ReporteSaldoPromedio;
+import com.nttdata.reports.accountservice.model.TypeAccount;
 import com.nttdata.reports.accountservice.service.ReportsAccountService;
 
 import lombok.extern.log4j.Log4j2;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 @Log4j2
 @Service
@@ -33,73 +35,96 @@ public class ReportsAccountServiceImpl implements ReportsAccountService {
 
 	@Autowired
 	CreditFeignClient creditFeignClient;
-	
+
 	@Autowired
 	ProductFeignClient productFeignClient;
-	
+
 	@Autowired
 	MovementAccountFeignClient movementAccountFeignClient;
 
-	@Override
-	public BankAccounts findByIdAccount(Long idBankAccount) {
-		BankAccounts accountBankAccounts = bankAccountFeignClient.bankAccountFindById(idBankAccount);
-		return accountBankAccounts;
-	}
-
-	@Override
-	public CreditAccount findByIdCredit(Long idCreditAccount) {
-		CreditAccount credit = creditFeignClient.creditfindById(idCreditAccount);
-		return credit;
-	}
-
-	@Override
-	public Mono<Map<String, Object>> summaryWithAverageBalances(BankAccounts bankAccounts ) {
-		
-		Map<String, Object> hashMap = new HashMap<String, Object>();
-		
-		BankAccounts objBankAccount = this.findByIdAccount(bankAccounts.getIdBankAccount());
-		
-		if(objBankAccount!=null) {
-			
-			
-		}else {
-			hashMap.put("Message", "Cuenta no encontrada");
-			log.info("Message Cuenta no encontrada: "+ objBankAccount);
-		}
-		
-		return null;
-	}
-
+	@Autowired
+	CustomerFeignClient customerFeignClient;
 	
+	@Autowired
+	MovementCreditFeignClient movementCreditFeignClient;
+
+	@Override
+	public Flux summaryWithAverageBalances(Long idCustomer, TypeAccount typeAccount) {
+
+		return this.summaryForProduct(idCustomer).map(ccp -> {// ConsolideCustomerProduct
+			
+			if(ccp.getTypeAccount() == typeAccount) {
+				return this.movementAccountFeignClient.findAll().stream()
+						.filter(x -> x.getIdBankAccount() == ccp.getIdBankAccount()).map(movAccount -> {
+							ReporteSaldoPromedio rpt = new ReporteSaldoPromedio();
+							rpt.setIdBankAccount(movAccount.getIdBankAccount());
+							rpt.setTypeAccount(typeAccount);
+							rpt.setProduct(ccp.getProduct());
+							rpt.setIdCreditAccount(ccp.getIdCreditAccount());
+
+							rpt.setAmount(movAccount.getAmount());
+							log.info("TypeAccount : "+ typeAccount);
+							log.info("rpt: " + rpt.toString());
+							return rpt;
+						});
+			}else {
+				return this.movementCreditFeignClient.findAll().stream()
+						.filter(x -> x.getIdCreditAccount() == ccp.getIdCreditAccount()).map(movCredit -> {
+							ReporteSaldoPromedio rpt = new ReporteSaldoPromedio();
+							rpt.setIdBankAccount(ccp.getIdBankAccount());
+							rpt.setTypeAccount(typeAccount);
+							rpt.setProduct(ccp.getProduct());
+							rpt.setIdCreditAccount(movCredit.getIdCreditAccount());
+
+							rpt.setAmount(movCredit.getAmount());
+							log.info("TypeAccount : "+ typeAccount);
+							log.info("rpt: " + rpt.toString());
+							return rpt;
+						});
+			}
+			
+
+		});
+
+	};
+
 	/*
-	 * Método para obtener consultas de reporte de todas las comisiones cobradas por producto en un periodo 
-	 *	de tiempo.
-	 * */
-	
+	 * Método para obtener consultas de reporte de todas las comisiones cobradas por
+	 * producto en un periodo de tiempo.
+	 */
+
 	@SuppressWarnings("deprecation")
 	@Override
 	public Flux<ReportBankAccount> commissionsChargedPerProduct(Long idProducto, Date from, Date to) {
 		return Flux.fromIterable(movementAccountFeignClient.findAll())
-			.filter(movAccount-> movAccount.getDateMovementAccount().getDate()>=from.getDate() && movAccount.getDateMovementAccount().getDate()<=to.getDate())
-			.map(obj-> {
-				ReportBankAccount rba = new ReportBankAccount();
-				rba.setMovementAccount(obj);
-				log.info("OBJ: "+ obj);
-				BankAccounts accounts = bankAccountFeignClient.bankAccountFindById(obj.getIdBankAccount());
-				log.info("accounts: "+ accounts);
-				rba.setBankAccounts(accounts);
-				rba.setProduct(productFeignClient.findById(accounts.getIdProduct()));
-				log.info("Product: "+ accounts.getIdProduct());
-				log.info("RBA: "+ rba.toString());
-				return rba;
-			})
-			.filter(x-> x.getProduct().getIdProducto() == idProducto);
+				.filter(movAccount -> movAccount.getDateMovementAccount().getDate() >= from.getDate()
+						&& movAccount.getDateMovementAccount().getDate() <= to.getDate())
+				.map(obj -> {
+					ReportBankAccount rba = new ReportBankAccount();
+					rba.setMovementAccount(obj);
+					log.info("OBJ: " + obj);
+					BankAccounts accounts = bankAccountFeignClient.bankAccountFindById(obj.getIdBankAccount());
+					log.info("accounts: " + accounts);
+					rba.setBankAccounts(accounts);
+					rba.setProduct(productFeignClient.findById(accounts.getIdProduct()));
+					log.info("Product: " + accounts.getIdProduct());
+					log.info("RBA: " + rba.toString());
+					return rba;
+				}).filter(x -> x.getProduct().getIdProducto() == idProducto);
 	}
 
-	
-	
+	/*
+	 * Método que retorna una lista total de los productos de credito o cuentas
+	 * bancarias del cliente.
+	 */
 
+	@Override
+	public Flux<ConsolidatedCustomerProducts> summaryForProduct(Long idCustomer) {
+		List<ConsolidatedCustomerProducts> listaAccount = bankAccountFeignClient.findProductByIdCustomer(idCustomer);
+		List<ConsolidatedCustomerProducts> listaCredit = creditFeignClient.findProductByIdCustomer(idCustomer);
+		listaAccount.addAll(listaCredit);
+		listaAccount.forEach(e -> log.info("ConsolidatedCustomerProducts:" + e.toString()));
+		return Flux.fromIterable(listaAccount);
+	}
 
-	
-	
 }

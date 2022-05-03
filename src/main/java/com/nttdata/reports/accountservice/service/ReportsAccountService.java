@@ -2,22 +2,23 @@ package com.nttdata.reports.accountservice.service;
 
 
 import java.util.Date;
-import java.util.Map;
+
 
 import com.nttdata.reports.accountservice.model.BankAccounts;
-import com.nttdata.reports.accountservice.model.CreditAccount;
+import com.nttdata.reports.accountservice.model.ConsolidatedCustomerProducts;
 import com.nttdata.reports.accountservice.model.ReportBankAccount;
+import com.nttdata.reports.accountservice.model.TypeAccount;
 
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 public interface ReportsAccountService {
-
-	BankAccounts findByIdAccount(Long idBankAccount);
 	
-	CreditAccount findByIdCredit(Long idCreditAccount);
+	/*
+	 * Metodo para generar un resumen con los saldos promedio diarios 
+	 *	del mes en curso de todos los productos de crédito o cuentas bancarias que posee el cliente
+	 * */
 	
-	Mono<Map<String, Object>> summaryWithAverageBalances(BankAccounts bankAccounts);
+	Flux<BankAccounts> summaryWithAverageBalances(Long idCustomer, TypeAccount typeAccount);
 	
 	/*
 	 *  Metodo para Generar un reporte de todas las comisiones cobradas por producto en un periodo 
@@ -25,4 +26,8 @@ public interface ReportsAccountService {
 	 * 
 	 * */
 	Flux<ReportBankAccount> commissionsChargedPerProduct(Long idProducto, Date from, Date to);
+	
+	
+	Flux<ConsolidatedCustomerProducts> summaryForProduct(Long idCustomer);
+
 }
