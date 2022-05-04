@@ -19,4 +19,7 @@ public interface CreditFeignClient {
 	
 	@GetMapping
 	List<CreditAccount> findAllCreditsAccounts();
+
+	@GetMapping("/{id}")
+	CreditAccount creditAccountFindById(@PathVariable("id") Long idCustomer);
 }

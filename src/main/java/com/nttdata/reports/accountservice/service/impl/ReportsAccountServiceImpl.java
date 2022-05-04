@@ -4,7 +4,9 @@ import java.util.Date;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.nttdata.reports.accountservice.FeignClient.BankAccountFeignClient;
 import com.nttdata.reports.accountservice.FeignClient.CreditFeignClient;
@@ -15,7 +17,11 @@ import com.nttdata.reports.accountservice.FeignClient.ProductFeignClient;
 import com.nttdata.reports.accountservice.FeignClient.TableIdFeignClient;
 import com.nttdata.reports.accountservice.model.BankAccounts;
 import com.nttdata.reports.accountservice.model.ConsolidatedCustomerProducts;
+import com.nttdata.reports.accountservice.model.CreditAccount;
+import com.nttdata.reports.accountservice.model.Customer;
+import com.nttdata.reports.accountservice.model.ProductId;
 import com.nttdata.reports.accountservice.model.ReportBankAccount;
+import com.nttdata.reports.accountservice.model.ReportBankProductInterval;
 import com.nttdata.reports.accountservice.model.ReporteSaldoPromedio;
 import com.nttdata.reports.accountservice.model.TypeAccount;
 import com.nttdata.reports.accountservice.service.ReportsAccountService;
@@ -44,7 +50,7 @@ public class ReportsAccountServiceImpl implements ReportsAccountService {
 
 	@Autowired
 	CustomerFeignClient customerFeignClient;
-	
+
 	@Autowired
 	MovementCreditFeignClient movementCreditFeignClient;
 
@@ -52,8 +58,8 @@ public class ReportsAccountServiceImpl implements ReportsAccountService {
 	public Flux summaryWithAverageBalances(Long idCustomer, TypeAccount typeAccount) {
 
 		return this.summaryForProduct(idCustomer).map(ccp -> {// ConsolideCustomerProduct
-			
-			if(ccp.getTypeAccount() == typeAccount) {
+
+			if (ccp.getTypeAccount() == typeAccount) {
 				return this.movementAccountFeignClient.findAll().stream()
 						.filter(x -> x.getIdBankAccount() == ccp.getIdBankAccount()).map(movAccount -> {
 							ReporteSaldoPromedio rpt = new ReporteSaldoPromedio();
@@ -63,11 +69,11 @@ public class ReportsAccountServiceImpl implements ReportsAccountService {
 							rpt.setIdCreditAccount(ccp.getIdCreditAccount());
 
 							rpt.setAmount(movAccount.getAmount());
-							log.info("TypeAccount : "+ typeAccount);
+							log.info("TypeAccount : " + typeAccount);
 							log.info("rpt: " + rpt.toString());
 							return rpt;
 						});
-			}else {
+			} else {
 				return this.movementCreditFeignClient.findAll().stream()
 						.filter(x -> x.getIdCreditAccount() == ccp.getIdCreditAccount()).map(movCredit -> {
 							ReporteSaldoPromedio rpt = new ReporteSaldoPromedio();
@@ -77,12 +83,11 @@ public class ReportsAccountServiceImpl implements ReportsAccountService {
 							rpt.setIdCreditAccount(movCredit.getIdCreditAccount());
 
 							rpt.setAmount(movCredit.getAmount());
-							log.info("TypeAccount : "+ typeAccount);
+							log.info("TypeAccount : " + typeAccount);
 							log.info("rpt: " + rpt.toString());
 							return rpt;
 						});
 			}
-			
 
 		});
 
@@ -125,6 +130,42 @@ public class ReportsAccountServiceImpl implements ReportsAccountService {
 		listaAccount.addAll(listaCredit);
 		listaAccount.forEach(e -> log.info("ConsolidatedCustomerProducts:" + e.toString()));
 		return Flux.fromIterable(listaAccount);
+	}
+
+	/*
+	 * Metodo para generar un reporte general y completo por producto del banco en
+	 * intervalo de tiempo especificado por el usuario
+	 */
+
+	@SuppressWarnings("deprecation")
+	@Override
+	public Flux<ReportBankProductInterval> reportBankProductInterval(Long idCustomer, ProductId productId, Date from,
+			Date to) {
+		return this.summaryForProduct(idCustomer)
+				.filter(product -> product.getProduct().getCreationDate().getDate() >= from.getDate() //filtrando rango de fechas especificado por el usuario
+						&& product.getProduct().getCreationDate().getDate() <= to.getDate())
+				.filter(prodType -> productId.equals(prodType.getProduct().getProductId()))
+				.map(obj -> {
+					ReportBankProductInterval rbpi = new ReportBankProductInterval();
+						rbpi.setProduct(obj.getProduct());
+						rbpi.setTypeAccount(obj.getTypeAccount());
+						rbpi.setIdCustomer(obj.getIdCustomer());
+						rbpi.setIdAccount(obj.getIdAccount());
+						rbpi.setIdBankAccount(obj.getIdBankAccount());
+						rbpi.setIdCreditAccount(obj.getIdCreditAccount());
+						rbpi.setCreditAccount(obj.getCreditAccount());
+						Customer cust = customerFeignClient.customerfindById(idCustomer);
+						BankAccounts ba = bankAccountFeignClient.bankAccountFindById(obj.getIdBankAccount());
+						CreditAccount ca = creditFeignClient.creditAccountFindById(obj.getIdCreditAccount());
+						rbpi.setBankAccounts(ba);
+						rbpi.setCustomer(cust);
+						rbpi.setCreditAccount(ca);
+						log.info("Product OBJ: " + obj);
+						log.info("ReportBankProductInterval: " + rbpi);
+
+						return rbpi;
+
+				});
 	}
 
 }

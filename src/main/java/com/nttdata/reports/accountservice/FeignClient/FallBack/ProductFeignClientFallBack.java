@@ -1,5 +1,7 @@
 package com.nttdata.reports.accountservice.FeignClient.FallBack;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +19,12 @@ public class ProductFeignClientFallBack implements ProductFeignClient {
 
 	public Product findById(Long id) {		 
 		log.info("ProductFeignClientFallBack[" + productService + "/" + id + "]");
+		return null;
+	}
+
+	@Override
+	public List<Product> findAllProducts() {
+		log.info("findAllProducts not found!");
 		return null;
 	}
 

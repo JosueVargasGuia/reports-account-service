@@ -14,7 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nttdata.reports.accountservice.model.BankAccounts;
 import com.nttdata.reports.accountservice.model.CreditAccount;
+import com.nttdata.reports.accountservice.model.ProductId;
 import com.nttdata.reports.accountservice.model.ReportBankAccount;
+import com.nttdata.reports.accountservice.model.ReportBankProductInterval;
 import com.nttdata.reports.accountservice.model.TypeAccount;
 import com.nttdata.reports.accountservice.service.ReportsAccountService;
 
@@ -33,9 +35,15 @@ public class ReportsAccountController {
 		return service.commissionsChargedPerProduct(idProducto,from, to);
 	}
 	
-	@GetMapping("/summaryWithAverageBalances/{idCustomer}")
-	public Flux summaryWithAverageBalances(@PathVariable("idCustomer") Long idCustomer, @RequestParam TypeAccount typeAccount){
+	@GetMapping("/summaryWithAverageBalances/")
+	public Flux summaryWithAverageBalances(@RequestParam Long idCustomer, @RequestParam TypeAccount typeAccount){
 		return service.summaryWithAverageBalances(idCustomer, typeAccount);
+	}
+	
+	@GetMapping("/reportBankProductInterval/")
+	public Flux<ReportBankProductInterval> reportBankProductInterval(@RequestParam Long idCustomer, @RequestParam ProductId productId, @RequestParam Date from, @RequestParam Date to){
+		return service.reportBankProductInterval(idCustomer, productId, from, to);
+		
 	}
 	
 }
