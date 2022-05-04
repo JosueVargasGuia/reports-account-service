@@ -15,6 +15,7 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 @Component
 public class CreditFeignClientFallBack implements CreditFeignClient {
+	
 	@Value("${api.credit-service.uri}")
 	private String service;
 
@@ -27,6 +28,12 @@ public class CreditFeignClientFallBack implements CreditFeignClient {
 	@Override
 	public List<CreditAccount> findAllCreditsAccounts() {
 		log.info("List of credits accounts not found! ");
+		return null;
+	}
+	
+	@Override
+	public CreditAccount creditAccountFindById(Long id) {
+		log.info("CreditAccountFeignClientFallBack -> " + service + "/"+ id);
 		return null;
 	}
 }
